@@ -1,0 +1,122 @@
+#Api Page
+
+AllTablesResponse? getAllTablesResponse;
+
+Future<AllTablesResponse> fetchClubs2({required int limit, required int offset}) async {
+  const String baseUrl = 'https://partywitty.com/master/APIs/Common/';
+
+  try {
+  final response = await post(
+  Uri.parse('$baseUrl/allClubNew'),
+  body: {
+  'latitude': '28.4131328',
+  'longitude': '77.0473984',
+  'keyword': 'sector',
+  'limit': limit.toString(),
+  'offset': offset.toString(),
+  },
+  );
+
+  if (response.statusCode == 200) {
+  Map<String, dynamic> responseBody = json.decode(response.body);
+  final apiResponseObject = AllTablesResponse.fromJson(responseBody);
+  getAllTablesResponse = apiResponseObject;
+
+  return apiResponseObject;
+  } else {
+  throw Exception('Failed to fetch clubs. Status Code: ${response.statusCode}');
+  }
+  } catch (e) {
+  throw Exception('Error fetching clubs: $e');
+  }
+  }
+
+
+  Future<List<dynamic>> fetchClubs({required int limit, required int offset }) async {
+    const String baseUrl = 'https://partywitty.com/master/APIs/Common/';
+
+    try {
+      final response = await post(
+        Uri.parse('$baseUrl/allClubNew'),
+        body: {
+          'latitude': '28.4131328',
+          'longitude': '77.0473984',
+          'keyword': 'sector',
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseBody = json.decode(response.body);
+        List<dynamic> clubs = responseBody['data'] ?? [];
+        return clubs;
+      } else {
+        throw Exception(
+            'Failed to fetch clubs. Status Code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching clubs: $e');
+    }
+  }
+
+
+#Page
+
+final ApiService _apiService = ApiService();
+  AllTablesResponse? allClubsResponse;
+  List<dynamic> items = [];
+  int offset = 0;
+  int limit = 5;
+  bool isLoading = false;
+  bool hasMore = true;
+
+Future<void> fetchData2() async {
+    if (isLoading || !hasMore) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      List<dynamic> newData =
+          await _apiService.fetchClubs(limit: limit, offset: offset);
+
+      setState(() {
+        items.addAll(newData);
+        offset += limit;
+        isLoading = false;
+        hasMore = newData.length == limit;
+      });
+    } catch (e) {
+      debugPrint('Error fetching data: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+Future<void> _getData() async {
+    if (isLoading || !hasMore) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final clubList = await clubApi.fetchClubs2(limit: limit, offset: offset);
+      setState(() {
+        if (allClubsResponse == null) {
+          allClubsResponse = clubList;
+        } else {
+          allClubsResponse!.data.addAll(clubList.data);
+        }
+        offset += limit;
+        isLoading = false;
+        hasMore = clubList.data.length == limit;
+        responseMsg = allClubsResponse?.msg ?? '';
+      });
+    } catch (e) {
+      const SnackBar(content: Text('Failed to load club details'));
+    }
+  }
